@@ -1,10 +1,18 @@
-from flask import Flask, render_template, url_for, request, jsonify
+from flask import Flask, render_template, url_for, request, jsonify, Response
 import numpy as np
 import pickle
-
+import json
+import pandas as pd
+import random
 
 app = Flask(__name__)
 loaded_model = pickle.load(open("model.sav", "rb"))
+df = pd.read_csv('symptom_Description.csv')
+print(df.head())
+df2 = pd.read_csv('symptom_precaution.csv')
+print(df2.head())
+# des = df.loc[df['Disease'] == 'Malaria', 'Description']
+# print(des)
 
 symptoms_dict = {
     "abdominal_pain": 39,
@@ -147,17 +155,32 @@ def home():
     input_vector = np.zeros(len(symptoms_dict))
     symp = []
     symptoms = request.args.get("symptoms")
-    symptoms = symptoms.split(",")
+    if symptoms:
+        symptoms = symptoms.split(",")
+        # print(symptoms)
+        for symptom in symptoms:
+            symp.append(symptoms_dict[symptom])
+        input_vector[symp] = 1
+        result = loaded_model.predict([input_vector])[0]
+        print(result)
+        des = df[df['Disease'] == result].Description.to_list()[0]
+        print(type(des), des)
+        precaution = df2[df2['Disease'] == result].values.tolist()[0][1:]
 
-    for symptom in symptoms:
-        symp.append(symptoms_dict[symptom])
+        precaution_list = [
+            incom for incom in precaution if str(incom) != 'nan']
 
-    input_vector[symp] = 1
+        response = {'results': {'status': 200,
+                                'message': 'Success', 'Disease': result, 'description': des, 'precaution': precaution_list}}
+        # print(response)
+    else:
+        response = {'results': {'status': 200, 'message': 'No Symptoms given'}}
 
-    return jsonify({"data": loaded_model.predict([input_vector])[0]})
+    # return jsonify({"Disease": loaded_model.predict([input_vector])[0]})
+    return Response(json.dumps(response), status=200)
+    # return jsonify(response)
 
 
-if __name__ == "__main__":
-    app.debug = True
-    app.run(host="0.0.0.0", port=5000)
-
+if __name__ == '__main__':
+    app.run()
+    # app.run(host="0.0.0.0", port=5002)
