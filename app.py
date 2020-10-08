@@ -161,9 +161,13 @@ def home():
         for symptom in symptoms:
             symp.append(symptoms_dict[symptom])
         input_vector[symp] = 1
+        print(input_vector)
         result = loaded_model.predict([input_vector])[0]
         print(result)
-        des = df[df['Disease'] == result].Description.to_list()[0]
+
+        des = df[df['Disease'] == result.strip()].Description.to_list()[0]
+
+        # des = df[df['Disease'] == result].Description.to_list()[0]
         print(type(des), des)
         precaution = df2[df2['Disease'] == result].values.tolist()[0][1:]
 
@@ -182,5 +186,5 @@ def home():
 
 
 if __name__ == '__main__':
-    app.run()
-    # app.run(host="0.0.0.0", port=5002)
+    # app.run()
+    app.run(host="0.0.0.0", port=5002)
